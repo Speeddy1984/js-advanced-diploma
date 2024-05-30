@@ -9,6 +9,7 @@ import Vampire from './characters/Vampire'
 import { generateTeam } from './generators';
 import GamePlay from './GamePlay';
 import cursors from './cursors';
+import GameState from './GameState';
 
 
 export default class GameController {
@@ -19,6 +20,7 @@ export default class GameController {
     this.humanTypes = [Bowman, Swordsman, Magician];
     this.computerTypes = [Daemon, Undead, Vampire];
     this.selectedCharacterOnCell = null;
+    this.gameState = new GameState();
   }
 
   generateRandomPosition(boardSize, allowedColumns, usedPositions) {
@@ -41,7 +43,32 @@ export default class GameController {
     return this.computerTypes.some(type => positionedCharacter.character instanceof type);
   }
 
+  // Метод для обработки атаки
+  async handleAttack(attacker, target) {
+    // Вычисляем урон
+    const damage = Math.max(attacker.character.attack - target.character.defence, attacker.character.attack * 0.1);
 
+    // Уменьшаем здоровье цели на размер урона. Если становится отрицательным, равняем к нулю
+    target.character.health -= damage;
+    if (target.character.health < 0) target.character.health = 0;
+    
+    // Проверяем корректность позиции и существование ячейки
+    if (target.position < 0 || target.position >= this.gamePlay.cells.length) {
+      console.error('Invalid target position:', target.position);
+      return;
+    }
+
+    // Отображаем урон
+    await this.gamePlay.showDamage(target.position, damage);
+    
+    // Удаляем цель, если здоровье достигло нуля
+    if (target.character.health === 0) {
+      this.arrayOfPlayers = this.arrayOfPlayers.filter(player => player !== target);
+    }
+
+    // Перерисовываем позиции персонажей
+    this.gamePlay.redrawPositions(this.arrayOfPlayers);
+  }
 
   init() {
 
@@ -90,22 +117,32 @@ export default class GameController {
     );
 
     if (clickedCharacterElement && this.isHumanCharacter(clickedCharacter)) {
-           
       if (this.selectedCharacterOnCell) {
         this.gamePlay.deselectCell(this.selectedCharacterOnCell.position);
       }
       
       this.gamePlay.selectCell(index);
       this.selectedCharacterOnCell = clickedCharacter;
-
       return
     }
 
     if (!clickedCharacterElement && this.selectedCharacterOnCell) {
       if (this.selectedCharacterOnCell.characterCanMove(this.selectedCharacterOnCell.character, this.selectedCharacterOnCell.position, index, this.gamePlay.boardSize)) {
         this.moveCharacter(index);
+        this.gameState = false;
+        console.log(this.gameState);
       } else {
         GamePlay.showError('Недопустимое перемещение!');
+      }
+      return;
+    }
+
+    // Логика атаки
+    if (clickedCharacterElement && this.selectedCharacterOnCell && this.isComputerCharacter(clickedCharacter)) {
+      if (this.selectedCharacterOnCell.characterCanAttack(this.selectedCharacterOnCell.character, this.selectedCharacterOnCell.position, index, this.gamePlay.boardSize)) {
+        this.handleAttack(this.selectedCharacterOnCell, clickedCharacter);
+      } else {
+        GamePlay.showError('Недопустимая атака!');
       }
       return;
     }
