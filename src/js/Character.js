@@ -28,4 +28,13 @@ export default class Character {
   get characterInfo() {
     return `\u{1F396}${this.level} \u{2694}${this.attack} \u{1F6E1}${this.defence} \u{2764}${this.health}`;
   }
+
+  levelUp() {
+    if (this.level < 4) {
+      this.level += 1;
+    }
+    this.attack = Math.max(this.attack, this.attack * (80 + this.health) / 100);
+    this.defence = Math.max(this.defence, this.defence * (80 + this.health) / 100);
+    this.health = Math.min(100, this.health + 80);
+  }
 }

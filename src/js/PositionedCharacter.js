@@ -14,13 +14,13 @@ export default class PositionedCharacter {
     this.position = position;
   }
 
-  characterCanMove(character, currentPosition, targetPosition, boardSize) {
+  playerCanMove(character, currentPosition, targetPosition, boardSize) {
     const distance = character.moveDistance;
-    const possibleMoves = this.getPossibleMoves(currentPosition, distance, boardSize);
+    const possibleMoves = this.getPossiblePlayerMoves(currentPosition, distance, boardSize);
     return possibleMoves.includes(targetPosition);
   }
 
-  getPossibleMoves(position, distance, boardSize) {
+  getPossiblePlayerMoves(position, distance, boardSize) {
     const moves = [];
     const row = Math.floor(position / boardSize);
     const col = position % boardSize;
@@ -43,6 +43,7 @@ export default class PositionedCharacter {
     return moves;
   }
 
+  // проверяем, массив ячеек, которые можно атаковать, возвращаем массив
   characterCanAttack(character, currentPosition, targetPosition, boardSize) {
     const distance = character.attackDistance;
     const possibleAttacks = this.getPossibleAttacks(currentPosition, distance, boardSize);
