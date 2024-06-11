@@ -208,12 +208,9 @@ export default class GamePlay {
     return new Promise((resolve) => {
       const cell = this.cells[index];
       const damageEl = document.createElement('span');
-      console.log(cell);
-      console.log(damageEl);
       damageEl.textContent = damage;
       damageEl.classList.add('damage');
       cell.appendChild(damageEl);
-
       damageEl.addEventListener('animationend', () => {
         cell.removeChild(damageEl);
         resolve();

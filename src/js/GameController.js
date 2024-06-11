@@ -82,10 +82,7 @@ export default class GameController {
     }
 
     // Отображаем урон
-    await setTimeout(
-      () => this.gamePlay.showDamage(target.position, damage),
-      0
-    );
+    await this.gamePlay.showDamage(target.position, damage);
 
     // Удаляем цель, если здоровье достигло нуля
     if (target.character.health === 0) {
@@ -93,6 +90,7 @@ export default class GameController {
         (player) => player !== target
       );
       this.gamePlay.redrawPositions(this.arrayOfPlayers);
+      console.log('удаление цели');
       this.checkEndGame();
 
       return; // Завершаем выполнение метода, если цель была удалена
@@ -100,6 +98,7 @@ export default class GameController {
 
     // Перерисовываем позиции персонажей
     this.gamePlay.redrawPositions(this.arrayOfPlayers);
+    console.log('после перерисовки');
     this.checkEndGame();
   }
 
@@ -123,7 +122,7 @@ export default class GameController {
         const score = this.calculateScore();
         if (score > this.gameState.maxScore) {
           this.gameState.maxScore = score;
-          console.log(this.gameState.maxScore);
+          console.log('MaxSxore:' + this.gameState.maxScore);
         }
         this.isGameOver = true; // Устанавливаем флаг завершения игры
       }
@@ -239,8 +238,12 @@ export default class GameController {
     if (target && attacker) {
       this.handleAttack(attacker, target).then(() => {
         if (target.character.health === 0) {
+          this.gamePlay.deselectCell(target.position); // снимаем выделение ячейки персонажа игрока
           this.isPlayerTurn = true; // Переключаем на ход игрока, если цель была убита
         }
+        console.log('передали ход игроку');
+        console.log('таймаут');
+
         this.checkEndGame();
       });
     } else {
@@ -321,8 +324,8 @@ export default class GameController {
   }
 
   init() {
-    console.log(this.gameState.maxScore);
     this.gamePlay.drawUi(themes.prairie);
+    this.isPlayerTurn = true;
     this.arrayOfPlayers = [];
     this.generateInitialPositions();
     this.gamePlay.redrawPositions(this.arrayOfPlayers);
@@ -367,12 +370,6 @@ export default class GameController {
     });
   }
 
-  unblockGameField() {
-    this.gamePlay.cells.forEach((cell) => {
-      cell.style.pointerEvents = "auto";
-    });
-  }
-
   calculateScore() {
     return this.arrayOfPlayers.reduce((acc, player) => {
       if (this.isHumanCharacter(player)) {
@@ -383,6 +380,9 @@ export default class GameController {
   }
 
   onCellClick(index) {
+    console.log('click!');
+    console.log(this.isPlayerTurn);
+
     if (!this.isPlayerTurn) return;
 
     const clickedCharacterElement =
@@ -390,6 +390,9 @@ export default class GameController {
     const clickedCharacter = this.arrayOfPlayers.find(
       (element) => element.position === index
     );
+
+    // console.log(clickedCharacterElement);
+    // console.log(clickedCharacter);
 
     if (clickedCharacterElement && this.isHumanCharacter(clickedCharacter)) {
       if (this.selectedCharacterOnCell) {
@@ -411,6 +414,7 @@ export default class GameController {
       ) {
         this.moveCharacter(this.selectedCharacterOnCell.position, index);
         this.isPlayerTurn = false;
+        console.log('передали ход ПК');
         this.checkEndGame();
       } else {
         GamePlay.showError("Недопустимое перемещение!");
@@ -447,8 +451,7 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    const enteredCharacterElement =
-      this.gamePlay.cells[index].querySelector(".character");
+    const enteredCharacterElement = this.gamePlay.cells[index].querySelector(".character");
     const enteredCharacter = this.arrayOfPlayers.find(
       (element) => element.position === index
     );
@@ -510,9 +513,46 @@ export default class GameController {
       arrayOfPlayers: this.arrayOfPlayers,
     };
     this.stateService.save(this.gameState);
-    // console.log(this.arrayOfPlayers);
-    console.log(this.gameState);
     GamePlay.showMessage("Игра сохранена");
+  }
+
+  // Реконструируем объекты классов персонажей из json
+  reconstructCharacter(data) {
+    let character;
+    switch (data.type) {
+      case 'bowman':
+        character = new Bowman();
+        break;
+      case 'swordsman':
+        character = new Swordsman();
+        break;
+      case 'magician':
+        character = new Magician();
+        break;
+      case 'daemon':
+        character = new Daemon();
+        break;
+      case 'undead':
+        character = new Undead();
+        break;
+      case 'vampire':
+        character = new Vampire();
+        break;
+      default:
+        throw new Error(`Неизвестный персонаж: ${data.type}`);
+    }
+    character.level = data.level;
+    character.attack = data.attack;
+    character.defence = data.defence;
+    character.health = data.health;
+    console.log(character);
+    return character;
+  }
+  
+  // Реконструируем объект PositionedCharacter из json
+  reconstructPositionedCharacter(data) {
+    const character = this.reconstructCharacter(data.character);
+    return new PositionedCharacter(character, data.position);
   }
 
   loadingGame() {
@@ -529,9 +569,9 @@ export default class GameController {
     }
     this.gameState = GameState.from(loadedState);
     this.arrayOfPlayers = [];
-    this.arrayOfPlayers = this.gameState.arrayOfPlayers;
+    this.arrayOfPlayers = this.gameState.arrayOfPlayers.map(data => this.reconstructPositionedCharacter(data));
     this.currentLevel = this.gameState.currentLevel;
-    this.isPlayerTurn = this.gameState.isPlayerTurn;
+    this.isPlayerTurn = true;
     this.gamePlay.drawUi(themesArray[this.currentLevel]);
     this.gamePlay.redrawPositions(this.arrayOfPlayers);
   }
