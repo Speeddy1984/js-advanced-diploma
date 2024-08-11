@@ -23,6 +23,7 @@ export default class GameController {
     this.isPlayerTurn = true; // Отслеживает чей ход
     this.currentLevel = 0; // Инициализация текущего уровня
     this.isGameOver = false; // Флаг завершения игры
+    this.addEventListeners();
   }
 
   generateRandomPosition(boardSize, allowedColumns, usedPositions) {
@@ -50,7 +51,7 @@ export default class GameController {
     );
   }
 
-  //Ход игрока
+  //Ход (движение) игрока
   moveCharacter(currentPosition, targetPosition) {
     const characterIndex = this.arrayOfPlayers.findIndex(
       (el) => el.position === currentPosition
@@ -90,7 +91,8 @@ export default class GameController {
         (player) => player !== target
       );
       this.gamePlay.redrawPositions(this.arrayOfPlayers);
-      console.log('удаление цели');
+      console.log("The target is deliting");
+      console.log("Checking end game if health = 0");
       this.checkEndGame();
 
       return; // Завершаем выполнение метода, если цель была удалена
@@ -98,13 +100,13 @@ export default class GameController {
 
     // Перерисовываем позиции персонажей
     this.gamePlay.redrawPositions(this.arrayOfPlayers);
-    console.log('после перерисовки');
+    console.log("Checking end game if health not equal 0");
     this.checkEndGame();
   }
 
   // Проверка на конец игры
   checkEndGame() {
-    console.log("Checking end game...");
+    console.log("Checking end game function...");
     // Массив команды игрока
     const humanTeam = this.arrayOfPlayers.filter((player) =>
       this.isHumanCharacter(player)
@@ -122,7 +124,7 @@ export default class GameController {
         const score = this.calculateScore();
         if (score > this.gameState.maxScore) {
           this.gameState.maxScore = score;
-          console.log('MaxSxore:' + this.gameState.maxScore);
+          console.log("MaxSxore:" + this.gameState.maxScore);
         }
         this.isGameOver = true; // Устанавливаем флаг завершения игры
       }
@@ -145,7 +147,7 @@ export default class GameController {
         this.nextLevel();
       }
     } else if (!this.isPlayerTurn) {
-      setTimeout(() => this.computerMove(), 500);
+      this.computerMove();
     }
   }
 
@@ -241,9 +243,8 @@ export default class GameController {
           this.gamePlay.deselectCell(target.position); // снимаем выделение ячейки персонажа игрока
           this.isPlayerTurn = true; // Переключаем на ход игрока, если цель была убита
         }
-        console.log('передали ход игроку');
-        console.log('таймаут');
-
+        console.log("The turn is passing to human");
+        console.log("Checking end game after human`s move");
         this.checkEndGame();
       });
     } else {
@@ -329,7 +330,6 @@ export default class GameController {
     this.arrayOfPlayers = [];
     this.generateInitialPositions();
     this.gamePlay.redrawPositions(this.arrayOfPlayers);
-    this.addEventListeners();
   }
 
   addEventListeners() {
@@ -348,7 +348,7 @@ export default class GameController {
     );
   }
 
-  //возможные ходы кеомпьютера
+  // возможные ходы кеомпьютера
   getPossibleMoves(character, boardSize) {
     const moves = [];
     const row = Math.floor(character.position / boardSize);
@@ -380,8 +380,7 @@ export default class GameController {
   }
 
   onCellClick(index) {
-    console.log('click!');
-    console.log(this.isPlayerTurn);
+    console.log(`${Date.now()} click!`);
 
     if (!this.isPlayerTurn) return;
 
@@ -390,9 +389,6 @@ export default class GameController {
     const clickedCharacter = this.arrayOfPlayers.find(
       (element) => element.position === index
     );
-
-    // console.log(clickedCharacterElement);
-    // console.log(clickedCharacter);
 
     if (clickedCharacterElement && this.isHumanCharacter(clickedCharacter)) {
       if (this.selectedCharacterOnCell) {
@@ -414,7 +410,8 @@ export default class GameController {
       ) {
         this.moveCharacter(this.selectedCharacterOnCell.position, index);
         this.isPlayerTurn = false;
-        console.log('передали ход ПК');
+        console.log("Checking end game after human`s move");
+        console.log("The turn is passing to PC");
         this.checkEndGame();
       } else {
         GamePlay.showError("Недопустимое перемещение!");
@@ -438,6 +435,7 @@ export default class GameController {
         this.handleAttack(this.selectedCharacterOnCell, clickedCharacter).then(
           () => {
             this.isPlayerTurn = false;
+            console.log("Checking end game after human`s attack");
             this.checkEndGame();
           }
         );
@@ -451,7 +449,8 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    const enteredCharacterElement = this.gamePlay.cells[index].querySelector(".character");
+    const enteredCharacterElement =
+      this.gamePlay.cells[index].querySelector(".character");
     const enteredCharacter = this.arrayOfPlayers.find(
       (element) => element.position === index
     );
@@ -507,7 +506,7 @@ export default class GameController {
   }
 
   savingGame() {
-    console.log("сохраняем");
+    console.log("Trying to save game");
     this.gameState = {
       currentLevel: this.currentLevel,
       arrayOfPlayers: this.arrayOfPlayers,
@@ -520,22 +519,22 @@ export default class GameController {
   reconstructCharacter(data) {
     let character;
     switch (data.type) {
-      case 'bowman':
+      case "bowman":
         character = new Bowman();
         break;
-      case 'swordsman':
+      case "swordsman":
         character = new Swordsman();
         break;
-      case 'magician':
+      case "magician":
         character = new Magician();
         break;
-      case 'daemon':
+      case "daemon":
         character = new Daemon();
         break;
-      case 'undead':
+      case "undead":
         character = new Undead();
         break;
-      case 'vampire':
+      case "vampire":
         character = new Vampire();
         break;
       default:
@@ -548,7 +547,7 @@ export default class GameController {
     console.log(character);
     return character;
   }
-  
+
   // Реконструируем объект PositionedCharacter из json
   reconstructPositionedCharacter(data) {
     const character = this.reconstructCharacter(data.character);
@@ -556,7 +555,7 @@ export default class GameController {
   }
 
   loadingGame() {
-    console.log("попытка загрузки");
+    console.log("Trying to load game");
     const loadedState = this.stateService.load();
     const themesArray = [
       themes.prairie,
@@ -569,9 +568,12 @@ export default class GameController {
     }
     this.gameState = GameState.from(loadedState);
     this.arrayOfPlayers = [];
-    this.arrayOfPlayers = this.gameState.arrayOfPlayers.map(data => this.reconstructPositionedCharacter(data));
+    this.arrayOfPlayers = this.gameState.arrayOfPlayers.map((data) =>
+      this.reconstructPositionedCharacter(data)
+    );
     this.currentLevel = this.gameState.currentLevel;
     this.isPlayerTurn = true;
+    this.isGameOver = false;
     this.gamePlay.drawUi(themesArray[this.currentLevel]);
     this.gamePlay.redrawPositions(this.arrayOfPlayers);
   }

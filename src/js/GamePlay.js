@@ -27,7 +27,7 @@ export default class GamePlay {
    * @param theme
    */
   drawUi(theme) {
-    this.checkBinding();
+    // this.checkBinding();
 
     this.container.innerHTML = `
       <div class="controls">
@@ -211,20 +211,17 @@ export default class GamePlay {
       damageEl.textContent = damage;
       damageEl.classList.add('damage');
       cell.appendChild(damageEl);
+      
       damageEl.addEventListener('animationend', () => {
-        cell.removeChild(damageEl);
+        // Проверяем, существует ли элемент в DOM перед удалением
+        if (damageEl.parentNode === cell) {
+          cell.removeChild(damageEl);
+        }
         resolve();
       });
     });
   }
-
   setCursor(cursor) {
     this.boardEl.style.cursor = cursor;
-  }
-
-  checkBinding() {
-    if (this.container === null) {
-      throw new Error('GamePlay not bind to DOM');
-    }
   }
 }
